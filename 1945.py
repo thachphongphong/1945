@@ -141,9 +141,6 @@ try:
     starty2 = screenHeight/2
     endy2 = screenHeight/2
 
-    # # move to botton
-    # TouchAction(driver).long_press(None,startx,starty).move_to(None,startx,starty-20).release().perform()
-
     # Swipe
     while 1:
         # schedule

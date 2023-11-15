@@ -3,12 +3,8 @@ from appium import webdriver
 from appium.webdriver.common.appiumby import AppiumBy
 import base64
 from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from multiprocessing.pool import ThreadPool
 from threading import active_count
 from time import sleep
-from concurrent.futures import ThreadPoolExecutor
 import schedule
 import threading
 import json
@@ -16,6 +12,8 @@ import json
 with open('settings.json') as f:
     desired_caps = json.load(f)
 
+map_53 = {"x" : 91, "y": 335}
+play_7 = {"x" : 180, "y": 766}
 skill_1 = { "x" : 40, "y": 536}
 skill_2 = {"x": 40, "y": 625}
 
@@ -36,9 +34,6 @@ with open(r"x.png", "rb") as image_file:
 with open(r"play.png", "rb") as image_file:
     play = base64.b64encode(image_file.read()).decode("utf-8")
 
-with open(r"73.png", "rb") as image_file:
-    i73 = base64.b64encode(image_file.read()).decode("utf-8")
-
 with open(r"next.png", "rb") as image_file:
     next = base64.b64encode(image_file.read()).decode("utf-8")
 
@@ -48,8 +43,15 @@ with open(r"rocket2.png", "rb") as image_file:
 with open(r"53.png", "rb") as image_file:
     i53 = base64.b64encode(image_file.read()).decode("utf-8")
 
+with open(r"map53.png", "rb") as image_file:
+    m53 = base64.b64encode(image_file.read()).decode("utf-8")
 
+# Add a threading Lock
+# lock = threading.Lock()
 next_time = 1
+next_clicked = True
+skill_i = 1
+
 def next_display():
     global next_time  # Declare skill_i as a global variable
     global next_clicked
@@ -65,16 +67,17 @@ def next_display():
         next_time = next_time + 1
         print('NEXT Not found !!!')
 
-next_clicked = True
 def click_i53():
     global next_clicked
     try:
-        sleep(20)
+        sleep(15)
         ei53 = driver.find_element(by=AppiumBy.IMAGE, value=i53)
-        print('I53 found !!!')
-        ei53.click()
-        sleep(5)
-        click_play7_coord()
+        if(ei53.is_displayed()):  
+            print('I53 found !!!')
+            # ei53.click()
+            TouchAction(driver).tap(None, map_53["x"], map_53["y"], 1).perform()
+            sleep(5)
+            click_play7_coord()
     except NoSuchElementException:
         print('I53 not found !!!')
 
@@ -83,14 +86,15 @@ def click_play7_coord():
     try:
         if next_clicked == True:
             print('Play click !!!')
-            TouchAction(driver).tap(None, 180, 766, 2).perform()
+            TouchAction(driver).tap(None, play_7["x"], play_7["y"], 1).perform()
             next_clicked = False
-            sleep(5)
+            sleep(3)
+        else:
+            click_i53()
     except NoSuchElementException:
         print('Play7 not found !!!')
 
 
-skill_i = 1
 def cast_skill_coord():
     global skill_i
     try:
@@ -122,7 +126,7 @@ try:
     # cast skill
     schedule.every(45).seconds.do(run_cast_skill)
     # next
-    schedule.every(120).seconds.do(next_display)
+    schedule.every(120).seconds.do(run_next_display)
 
     # Step 3 : Find the device width and height
     deviceSize = driver.get_window_size()
@@ -159,8 +163,13 @@ try:
             click_i53()
 except Exception as ex:
     print('!!! xxxxx !!!')
+    # Put the app into background for an indefinite amount of time:
+    driver.background_app(-1)
+    # and activate it once you need it again:
+    # driver.activate_app("app.id")
     print(ex)
 except KeyboardInterrupt:
+    # driver.quit()
     print('You pressed Ctrl+C!')
     exit()
 finally:

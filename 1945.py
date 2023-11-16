@@ -31,7 +31,7 @@ with open(r"plane.png", "rb") as image_file:
 with open(r"x.png", "rb") as image_file:
     x = base64.b64encode(image_file.read()).decode("utf-8")
 
-with open(r"play.png", "rb") as image_file:
+with open(r"play_7.png", "rb") as image_file:
     play = base64.b64encode(image_file.read()).decode("utf-8")
 
 with open(r"next.png", "rb") as image_file:
@@ -85,6 +85,9 @@ def click_play7_coord():
     global next_clicked
     try:
         if next_clicked == True:
+            sleep(1)
+            # ep7 = driver.find_element(by=AppiumBy.IMAGE, value=play)
+            # if(ep7.is_displayed()):
             print('Play click !!!')
             TouchAction(driver).tap(None, play_7["x"], play_7["y"], 1).perform()
             next_clicked = False
@@ -126,7 +129,7 @@ try:
     # cast skill
     schedule.every(45).seconds.do(run_cast_skill)
     # next
-    schedule.every(120).seconds.do(run_next_display)
+    schedule.every(120).seconds.do(next_display)
 
     # Step 3 : Find the device width and height
     deviceSize = driver.get_window_size()
@@ -173,4 +176,5 @@ except KeyboardInterrupt:
     print('You pressed Ctrl+C!')
     exit()
 finally:
+    print('Finally event')
     driver.quit()

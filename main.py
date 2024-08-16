@@ -120,7 +120,7 @@ def click_i53(driver):
         if ei53.is_displayed():
             LOGGER.info('I53 found : %s', ei53.get_attribute('score'))
             ActionHelpers.tap(driver, map_53, 500)
-            sleep(5)
+            sleep(3)
             click_play7_coord(driver)
     except Exception:
         LOGGER.warning('I53 not found !!!')
@@ -145,6 +145,9 @@ def click_play7_coord(driver):
             click_i53(driver)
     except NoSuchElementException:
         sleep(2)
+        next_time += 1
+        if next_time > NEXT_TIME_LIMIT:
+            raise Exception("3 times not found Play7, exit")
         click_play7_coord(driver)
         # LOGGER.warning('Play7 not found!!!, still click')
         # ActionHelpers.tap(driver, play_7)
@@ -195,7 +198,7 @@ def run_next_display(driver):
     except Exception:
         LOGGER.warning('NEXT Not found !!!')
         next_time += 1
-        if next_time >= NEXT_TIME_LIMIT:
+        if next_time > NEXT_TIME_LIMIT:
             raise Exception("3 times not found next, exit")
 
 

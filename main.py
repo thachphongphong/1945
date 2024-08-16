@@ -120,7 +120,7 @@ def click_i53(driver):
         if ei53.is_displayed():
             LOGGER.info('I53 found : %s', ei53.get_attribute('score'))
             ActionHelpers.tap(driver, map_53, 500)
-            sleep(5)
+            sleep(15)
             click_play7_coord(driver)
     except Exception:
         LOGGER.warning('I53 not found !!!')

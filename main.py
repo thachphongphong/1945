@@ -20,15 +20,17 @@ NEXT_TIME_LIMIT = 3
 next_time = 1
 next_clicked = True
 skill_i = 1
+started = 0
 
 IMAGE_FILE_PATHS = {
     'plane': 'plane.png',
     'x': 'x.png',
-    'play': 'play_7.png',
+    'play_7': 'play_7b.png',
     'next': 'next.png',
     'rocket': 'rocket2.png',
     'i53': '53.png',
     'm53': 'map53.png',
+    'token': 'out_token.png',
 }
 
 
@@ -49,11 +51,12 @@ loaded_images = load_images()
 load_settings = load_settings()
 LOGGER = logging.getLogger(__name__)
 i53 = loaded_images['i53']
+token = loaded_images['token']
+play = loaded_images['play_7']
 map_53 = [(91, 335)]
 play_7 = [(180, 766)]
 skill_1 = [(40, 536)]
 skill_2 = [(40, 625)]
-
 
 # HINT: fixtures below could be extracted into conftest.py
 # HINT: and shared across all tests in the suite
@@ -115,11 +118,11 @@ def click_i53(driver):
         sleep(20)
         ei53 = driver.find_element(by=AppiumBy.IMAGE, value=i53)
         if ei53.is_displayed():
-            LOGGER.info('I53 found !!!')
-            ActionHelpers.tap(driver, map_53)
-            sleep(5)
+            LOGGER.info('I53 found : %s', ei53.get_attribute('score'))
+            ActionHelpers.tap(driver, map_53, 500)
+            sleep(3)
             click_play7_coord(driver)
-    except NoSuchElementException:
+    except Exception:
         LOGGER.warning('I53 not found !!!')
 
 
@@ -128,30 +131,56 @@ def click_play7_coord(driver):
     try:
         if next_clicked:
             sleep(2)
-            LOGGER.info('Play click !!!')
-            ActionHelpers.tap(driver, play_7)
-            next_clicked = False
-            sleep(3)
+            eplay7 = driver.find_element(by=AppiumBy.IMAGE, value=play)
+            if eplay7.is_displayed():
+                LOGGER.info('Play 7 found score : %s', eplay7.get_attribute('score'))
+                ActionHelpers.tap(driver, play_7)
+                next_clicked = False
+                sleep(3)
+                if out_token(driver):
+                    raise Exception("OUT OF TOKEN, exit")
+            else:
+                LOGGER.info('Play 7 not found')
         else:
             click_i53(driver)
     except NoSuchElementException:
-        LOGGER.warning('Play7 not found !!!')
+        sleep(2)
+        next_time += 1
+        if next_time > NEXT_TIME_LIMIT:
+            raise Exception("3 times not found Play7, exit")
+        click_play7_coord(driver)
+        # LOGGER.warning('Play7 not found!!!, still click')
+        # ActionHelpers.tap(driver, play_7)
+        # next_clicked = False
+        # sleep(3)
+        # if out_token(driver):
+        #     raise Exception("OUT OF TOKEN, exit")
 
 
 def cast_skill_coord(driver):
     global skill_i
     try:
         if not next_clicked:
-            LOGGER.info('Cast Skill {}', skill_i)
+            LOGGER.info('Cast Skill : %s', str(skill_i))
             ActionHelpers.tap(driver, skill_1) if skill_i == 1 else ActionHelpers.tap(driver, skill_2)
             skill_i = skill_i + 1 if skill_i == 1 else skill_i - 1
-    except NoSuchElementException:
+    except Exception:
         LOGGER.warning('Play7 not found !!!')
 
 
 def play_game(driver, startx, starty, endx, endy, startx2, starty2, endx2, endy2):
     ActionHelpers.swipe(driver, startx, starty, endx, endy, 500)
     ActionHelpers.swipe(driver, startx2, starty2, endx2, endy2, 500)
+
+
+def out_token(driver):
+    try:
+        e_otoken = driver.find_element(by=AppiumBy.IMAGE, value=token)
+        LOGGER.warning('Token not enough !!!')
+        return e_otoken.is_displayed()
+    except NoSuchElementException:
+        LOGGER.info('Token enough !!!')
+        return False
 
 
 def run_next_display(driver):
@@ -164,11 +193,12 @@ def run_next_display(driver):
             next_clicked = True
             next_time = 1
             e_next.click()
+            sleep(3)
             click_i53(driver)
-    except NoSuchElementException:
-        next_time += 1
+    except Exception:
         LOGGER.warning('NEXT Not found !!!')
-        if next_time >= NEXT_TIME_LIMIT:
+        next_time += 1
+        if next_time > NEXT_TIME_LIMIT:
             raise Exception("3 times not found next, exit")
 
 
@@ -177,15 +207,15 @@ def run_cast_skill_coord(driver):
         if not next_clicked:
             cast_skill_coord(driver)
     except Exception as ex:
-        LOGGER.warning('Error in run_cast_skill_coord: {}', ex)
-
+        LOGGER.warning('Error in run_cast_skill_coord: %s', ex)
 
 def test_play(appium_service, ios_driver_factory):
     with ios_driver_factory({
         'appium:app': 'com.os.airforce',
-        'appium:noReset': 'true'
+        'appium:noReset': 'true',
     }) as driver:
         try:
+            driver.update_settings({"imageMatchThreshold": 0.4, "fixImageFindScreenshotDims": True})
             click_i53(driver)
             # cast skill
             schedule.every(45).seconds.do(run_cast_skill_coord, driver)
@@ -206,8 +236,12 @@ def test_play(appium_service, ios_driver_factory):
                 else:
                     click_i53(driver)
         except Exception as ex:
-            LOGGER.error('Error in test_play: {}', ex)
+            LOGGER.error('Error in test_play: %s', ex)
             driver.background_app(-1)
+            driver.quit()
+            appium_service.stop()
         except KeyboardInterrupt:
             LOGGER.warning('You pressed Ctrl+C!')
+            driver.quit()
+            appium_service.stop()
             exit()

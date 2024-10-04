@@ -206,7 +206,7 @@ def test_play(appium_service, ios_driver_factory):
                 else:
                     click_i53(driver)
         except Exception as ex:
-            LOGGER.error('Error in test_play: {}', ex)
+            LOGGER.error('X Error in test_play: {}', ex)
             driver.background_app(-1)
         except KeyboardInterrupt:
             LOGGER.warning('You pressed Ctrl+C!')
